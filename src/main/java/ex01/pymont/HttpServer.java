@@ -16,11 +16,15 @@ public class HttpServer {
     public static final String WEB_ROOT =
             System.getProperty("user.dir")+ File.separator+"webroot";
 
+
     /**
      * 表示Tomcat的关闭命令
      */
     private static final String SHUTDOWN_COMMAND = "/SHUTDOWN";
     private boolean isShutDown = false;
+
+
+
 
     public void await(){
         ServerSocket serverSocket = null;
@@ -44,7 +48,8 @@ public class HttpServer {
                 //填充匹配请求对象的内容
                 request.parse();
 
-                // TODO: 2019/12/3 进行响应处理
+                // 简单进行静态资源的发送
+                response.sendStaticResource();
 
                 //资源释放
                 socket.close();
@@ -58,8 +63,8 @@ public class HttpServer {
 
     public static void main(String[] args){
         HttpServer server = new HttpServer();
+        System.out.println("当前的工作目录如下："+WEB_ROOT);
         server.await();
-
 
     }
 
