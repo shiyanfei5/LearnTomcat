@@ -23,9 +23,6 @@ public class HttpServer {
     private static final String SHUTDOWN_COMMAND = "/SHUTDOWN";
     private boolean isShutDown = false;
 
-
-
-
     public void await(){
         ServerSocket serverSocket = null;
         int port = 8080;
@@ -65,7 +62,6 @@ public class HttpServer {
         HttpServer server = new HttpServer();
         System.out.println("当前的工作目录如下："+WEB_ROOT);
         server.await();
-
     }
 
 
