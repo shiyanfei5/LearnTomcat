@@ -63,7 +63,12 @@ public class HttpServer {
 
     public static void main(String[] args){
         HttpServer server = new HttpServer();
+        System.out.println(server.getClass().getClassLoader());
+        System.out.println(Request.class.getClassLoader());
+        System.out.println(Response.class.getClassLoader());
+
         System.out.println("当前的工作目录如下："+WEB_ROOT);
+
         server.await();
 
     }

@@ -47,8 +47,7 @@ public class Response implements ServletResponse {
         } else{
             String  errorMessage = "HTTP/1.1 404 File Not Found\r\n" +
                     "Content-Type: text/html\r\n"+
-                    "Content-Length: 23\r\n"+
-                    "\r\n";
+                    "Content-Length: 23\r\n\r\n";
             try{
                 bufferedSocketOut.write(errorMessage.getBytes());   //写入缓冲socket
                 bufferedSocketOut.flush();      //一定要flush，否则可能不发送
