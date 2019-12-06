@@ -1,6 +1,10 @@
 package ex02.pymont;
 
-public class servletProcessor {
+
+import java.net.URL;
+import java.net.URLClassLoader;
+
+public class ServletProcessor {
 
 
     /**
@@ -12,6 +16,14 @@ public class servletProcessor {
     public void process(Request request,Response response){
         String uri = request.getUri();
         String servletName = uri.substring( uri.lastIndexOf("/")+1);
+        //创建一个类加载器
+        URLClassLoader loader = null;
+        URL[] urls = new URL[1];
+        urls[0] = new URL();
+        loader = new URLClassLoader();
+
+
+
 
 
 
