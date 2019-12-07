@@ -1,5 +1,6 @@
 package ex02.pymont;
 
+import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +15,7 @@ public class HttpServer {
      * 表示静态资源所在的根目录
      */
     public static final String WEB_ROOT =
-            System.getProperty("user.dir")+ File.separator+"webroot";
+            System.getProperty("user.dir")+ File.separator+"webroot/";
 
 
     /**
@@ -45,8 +46,16 @@ public class HttpServer {
                 //填充匹配请求对象的内容
                 request.parse();
 
-                // 简单进行静态资源的发送
-                response.sendStaticResource();
+
+                //判断是静态资源还是servlet
+                if( request.getUri().startsWith("/servlet")  ){
+                    ServletProcessor processor = new ServletProcessor();
+                    processor.process(request,response);
+                } else{
+                    StaticResourceProcessor processor = new StaticResourceProcessor();
+                    processor.process(request,response);
+                }
+
 
                 //资源释放
                 socket.close();
