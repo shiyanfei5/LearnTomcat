@@ -59,7 +59,7 @@ public class HttpProcessor {
             // 获取key和value
             String key = new String(httpHeader.name,0,httpHeader.nameEnd+1);
             String value = new String(httpHeader.value,0,httpHeader.valueEnd+1);
-            
+
 
 
 
