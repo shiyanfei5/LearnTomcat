@@ -35,6 +35,15 @@ public class HttpRequest implements HttpServletRequest {
   private boolean requestedSessionCookie;
   private String requestedSessionId;
   private boolean requestedSessionURL;
+  protected List<Cookie> cookies ;
+
+
+  public void addCookie(Cookie cookie){
+    if(cookies == null){
+      cookies = new ArrayList<>();
+    }
+    cookies.add(cookie);
+  }
 
   @Override
   public String getAuthType() {
@@ -76,6 +85,18 @@ public class HttpRequest implements HttpServletRequest {
     return null;
   }
 
+  public void setMethod(String method) {
+    this.method = method;
+  }
+
+  public void setProtocol(String protocol) {
+    this.protocol = protocol;
+  }
+
+  public void setRequestURI(String requestURI) {
+    this.requestURI = requestURI;
+  }
+
   @Override
   public String getPathInfo() {
     return null;
@@ -96,6 +117,9 @@ public class HttpRequest implements HttpServletRequest {
     return null;
   }
 
+  public void setQueryString(String strings){
+    queryString = strings;
+  }
   @Override
   public String getRemoteUser() {
     return null;
