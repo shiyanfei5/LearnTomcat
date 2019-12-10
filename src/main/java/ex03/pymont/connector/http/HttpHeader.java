@@ -58,8 +58,11 @@ final class HttpHeader {
     // ----------------------------------------------------- Instance Variables
 
 
+    /**
+     * end标识 -1为空
+     */
     public char[] name;
-    public int nameEnd;
+    public int nameEnd ;
     public char[] value;
     public int valueEnd;
     protected int hashCode = 0;
@@ -99,8 +102,8 @@ final class HttpHeader {
      */
     public void recycle() {
 
-        nameEnd = 0;
-        valueEnd = 0;
+        nameEnd = -1;
+        valueEnd = -1;
         hashCode = 0;
 
     }

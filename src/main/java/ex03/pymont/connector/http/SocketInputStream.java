@@ -4,6 +4,7 @@ import ex02.pymont.Request;
 import ex02.pymont.Response;
 import ex02.pymont.ServletProcessor;
 import ex02.pymont.StaticResourceProcessor;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 import util.StringManager;
 
 import java.io.EOFException;
@@ -143,6 +144,7 @@ public class SocketInputStream extends InputStream {
             try {
                 chr = read();
                 if(chr == -1){
+                    System.out.println("走到这步");
                     throw  new IOException();
                 }
             } catch (IOException e) {
@@ -212,26 +214,21 @@ public class SocketInputStream extends InputStream {
      * 业务实现，填充HttpHeader(请求头)
      */
     public void readHeader(HttpHeader header) throws IOException{
-        // 清空header体
+        // 清空header容器
         if(header.valueEnd >0 || header.nameEnd >0){
             header.recycle();
         }
-        //去除请求体的空格
-        int chr = 0;
-        do {
-            try {
-                chr = read();
-                if(chr == -1){
-                    throw  new IOException();
-                }
-            } catch (IOException e) {
-                throw new EOFException
-                        (sm.getString("requestStream.readline.error"));
+        //若读到的字节为CR和LF
+        int chr = read();
+        if (chr == CR) {
+            chr = read();   // 再往后读一个
+            if (chr == LF){ //若为LF，则退出
+                return ;    //则不处理该对象
             }
-        } while (chr == CR || chr == LF);
-        // 从这开始 chr为具体内容
-        pos--;      //退回 空格字符
-
+        } else{
+            pos--;
+        }
+        //
         int readCount = 0; //下次要插入的位置
         while(true){
             chr = read();
@@ -248,7 +245,7 @@ public class SocketInputStream extends InputStream {
                 header.extendName(2);   //2倍扩容
             }
             header.name[readCount] = (char)chr;
-            readCount++;
+            readCount++;    //递增数量
         }
         readCount = 0;
         while(true){
@@ -290,7 +287,21 @@ public class SocketInputStream extends InputStream {
                 HttpHeader httpHeader = new HttpHeader();
                 SocketInputStream socketInputStream = new SocketInputStream(inputStream,2048);
                 socketInputStream.readRequestLine(httpRequestLine);
-                socketInputStream.readHeader(httpHeader);
+
+                while(true){
+
+                    socketInputStream.readHeader(httpHeader);
+                    if(httpHeader.nameEnd == -1 && httpHeader.valueEnd == -1 ){
+                        System.out.println("退出了");
+                        break;
+                    }
+                    System.out.println(
+                            new String( httpHeader.name,0,httpHeader.nameEnd+1)  + ": "+
+                            new String( httpHeader.value,0,httpHeader.valueEnd+1)
+                    );
+                }
+
+
 
                 //资源释放
                 socket.close();
