@@ -28,13 +28,13 @@
                 <!-- maven default生命周期，process-resources阶段执行maven-resources-plugin插件的resources目标
                 处理主资源目录下的资源文件时,只处理如下配置中包含的资源类型 -->
                 <includes>
-                    <include>**/*.xml</include>
+                    <include>**/*.properties</include>
                 </includes>
 
                 <!-- maven default生命周期，process-resources阶段执行maven-resources-plugin插件的resources目标
                 处理设定主资源目录下的资源文件时，不处理如下配置中包含的资源类型（剔除下如下配置中包含的资源类型）-->
                 <excludes>
-                    <exclude>**/*.yaml</exclude>
+                    <exclude>**/*.yml</exclude>
                 </excludes>
                <filtering>true</filtering>
             </resource>

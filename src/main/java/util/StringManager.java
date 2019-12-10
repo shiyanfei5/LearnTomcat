@@ -60,7 +60,6 @@ public class StringManager {
     public static void main(String[] args){
         StringManager s = StringManager.getManager("ex03.pymont.connector.http");
         System.out.println(s.getString("httpConnector.noAddress"));
-        SocketInput
     }
 
 
