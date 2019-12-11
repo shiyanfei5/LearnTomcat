@@ -1,15 +1,24 @@
-package ex03.pymont.connector.http;
+package ex03.pymont.connector.processor;
 
 
+
+import ex03.pymont.connector.http.*;
+import util.RequestUtil;
+import util.StringManager;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.List;
 
 public class HttpProcessor {
 
-
+    //错误消息映射器
+    // Socket类的错误信息转换器，一个包下一个对象，共同使用，
+    // 只读不写线程安全
+    protected static StringManager sm = StringManager.getManager(Constants.Package);
     //---------------------------实例属性-------------------------
     private HttpConnector connector;    //关联的connector
     private HttpRequest request;
@@ -25,19 +34,30 @@ public class HttpProcessor {
         OutputStream outputStream = null;
 
         try{
-            socketInputStream = new SocketInputStream( socket.getInputStream());
+            socketInputStream = new SocketInputStream( socket.getInputStream(),2048);
             outputStream = socket.getOutputStream();
 
             //创建一个请求
             request = new HttpRequest();
-            response = new HttpResponse();
+            response = new HttpResponse(outputStream);
 
             //填充Request
+            parseRequest(socketInputStream);
+            //填充请求头
+            parseHeaders(socketInputStream);
 
+            //check if this is a request for a servlet or a static resource
+            //a request for a servlet begins with "/servlet/"
+            if (request.getRequestURI().startsWith("/servlet/")) {
+                ServletProcessor processor = new ServletProcessor();
+                processor.process(request, response);
+            }
+            else {
+                StaticResourceProcessor processor = new StaticResourceProcessor();
+                processor.process(request, response);
+            }
 
-
-
-        } catch (IOException e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -60,21 +80,40 @@ public class HttpProcessor {
             String key = new String(httpHeader.name,0,httpHeader.nameEnd+1);
             String value = new String(httpHeader.value,0,httpHeader.valueEnd+1);
 
-
-
-
-
-
+            if(key.equals("Cookie")) {
+                List<Cookie> cookieList = RequestUtil.parseCookieHeader(value);
+                //由于cookie中可能包含session，所以需要如下处理设置session
+                for (Cookie cookie : cookieList) {
+                    if (cookie.getName().equals("jsessionid")) {
+                        // 目前仅仅支持 session存放在 cookie中，该函数永远返回false
+                        if (!request.isRequestedSessionIdFromCookie()) {
+                            //session在cookie
+                            request.setRequestedSessionCookie(true);
+                            //session在url
+                            request.setRequestedSessionURL(false);
+                            //设置最后的session
+                            request.setRequestedSessionId(cookie.getValue());
+                        }
+                    }
+                    // 把该cookie添加到request中
+                    request.addCookie(cookie);
+                }
+            } else if(  key.equals("Content-Length")) {
+                try {
+                    int n = Integer.parseInt(value);
+                } catch (Exception e) {
+                    throw new ServletException(sm.getString("httpProcessor.parseHeaders.contentLength"));
+                }
+            }   else if (key.equals("content-type")) {
+                request.setContentType(value);
+            }
 
         }
-
-
-
-
-
-
-
     }
+
+
+
+
 
 
 

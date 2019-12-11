@@ -3,11 +3,63 @@ package ex03.pymont.connector.http;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Locale;
 
 public class HttpResponse implements HttpServletResponse {
+
+    private OutputStream outputStream;  //outputStream即为输出
+    // the default buffer size
+    private static final int BUFFER_SIZE = 1024;
+    private HttpRequest request;
+    private PrintWriter writer;
+
+    //每一个响应对应一个返回的outputstream
+    public HttpResponse(OutputStream output) {
+        this.outputStream = output;
+    }
+
+    //获得writer
+
+
+    /**
+     *  该函数中，静态的文件流一定要保证close，即使抛出excception
+     */
+    public void sendStaticResource() {
+        // 获取目标静态文件
+        File file = new File(Constants.WEB_ROOT, request.getRequestURI());
+        // 使用Buffer封装socket流，加速速度
+        BufferedOutputStream bufferedSocketOut = new BufferedOutputStream(outputStream);
+
+        if(file.exists()){
+            //使用Buffer封装加快速率 ,借助 try-resource实现
+            try(BufferedInputStream bufferedInputStream =
+                        new BufferedInputStream( new FileInputStream(file) )
+            ) {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                int len;
+                while ((len = bufferedInputStream.read(buffer)) != -1) {
+                    bufferedSocketOut.write(buffer, 0, len);
+                }
+                bufferedSocketOut.flush();      //一定要flush，因为 缓冲区仅在满了的时候才发送
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else{
+            String  errorMessage = "HTTP/1.1 404 File Not Found\r\n" +
+                    "Content-Type: text/html\r\n"+
+                    "Content-Length: 23\r\n\r\n";
+            try{
+                bufferedSocketOut.write(errorMessage.getBytes());   //写入缓冲socket
+                bufferedSocketOut.flush();      //一定要flush，否则可能不发送
+            } catch ( Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+    }
 
     @Override
     public void addCookie(Cookie cookie) {
@@ -106,7 +158,11 @@ public class HttpResponse implements HttpServletResponse {
 
     @Override
     public PrintWriter getWriter() throws IOException {
-        return null;
+        //第二个参数为true时打开auto-flush，
+        //auto-flush表示println方法自动flush，但是print不会flush
+        // TODO: 2019/12/4 当service调用print时不会flush缓冲区
+        writer = new PrintWriter(outputStream,true);
+        return writer;
     }
 
     @Override
@@ -158,4 +214,9 @@ public class HttpResponse implements HttpServletResponse {
     public Locale getLocale() {
         return null;
     }
+
+
+
+
+
 }

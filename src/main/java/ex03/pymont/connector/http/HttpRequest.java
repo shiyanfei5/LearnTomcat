@@ -32,17 +32,34 @@ public class HttpRequest implements HttpServletRequest {
   private String serverName;
   private int serverPort;
   private Socket socket;
-  private boolean requestedSessionCookie;
+  private boolean requestedSessionCookie; //cookie存放session
   private String requestedSessionId;
-  private boolean requestedSessionURL;
+  private boolean requestedSessionURL; //url存放session
   protected List<Cookie> cookies ;
 
+  //设置session是否存放cookie
+  public void setRequestedSessionCookie(boolean flag) {
+    this.requestedSessionCookie = flag;
+  }
+  //设置session是否存放url
+  public void setRequestedSessionURL(boolean flag) {
+    requestedSessionURL = flag;
+  }
+  //设置session
+  public void setRequestedSessionId(String requestedSessionId) {
+    this.requestedSessionId = requestedSessionId;
+  }
 
   public void addCookie(Cookie cookie){
     if(cookies == null){
       cookies = new ArrayList<>();
     }
     cookies.add(cookie);
+  }
+
+
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
   }
 
   @Override
@@ -142,7 +159,7 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public String getRequestURI() {
-    return null;
+    return requestURI;
   }
 
   @Override
@@ -309,4 +326,12 @@ public class HttpRequest implements HttpServletRequest {
   public String getRealPath(String s) {
     return null;
   }
+
+
+
+
+
+
+
+
 }

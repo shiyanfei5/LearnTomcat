@@ -13,7 +13,7 @@ import java.io.IOException;
  *
  */
 
-final class HttpRequestLine {
+public final class HttpRequestLine {
 
 
     // -------------------------------------------------------------- Constants
