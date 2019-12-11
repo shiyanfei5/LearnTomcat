@@ -11,16 +11,15 @@ public class HttpResponse implements HttpServletResponse {
     private OutputStream outputStream;  //outputStream即为输出
     // the default buffer size
     private static final int BUFFER_SIZE = 1024;
+    private byte[] buffer;
     private HttpRequest request;
     private PrintWriter writer;
 
     //每一个响应对应一个返回的outputstream
     public HttpResponse(OutputStream output) {
+        buffer = new byte[BUFFER_SIZE];
         this.outputStream = output;
     }
-
-    //获得writer
-
 
     /**
      *  该函数中，静态的文件流一定要保证close，即使抛出excception
