@@ -7,11 +7,14 @@ import java.io.*;
 import java.util.Locale;
 
 public class HttpResponse implements HttpServletResponse {
-
-    private OutputStream outputStream;  //outputStream即为输出
     // the default buffer size
     private static final int BUFFER_SIZE = 1024;
+
+
+
+    private OutputStream outputStream;  //outputStream即为输出
     private byte[] buffer;
+    private int bufferCount;    //缓冲区中的数量
     private HttpRequest request;
     private PrintWriter writer;
 
@@ -59,6 +62,29 @@ public class HttpResponse implements HttpServletResponse {
         }
 
     }
+
+
+    /**
+     * write方法，写入buffer中
+     * @param
+     */
+    public void write(int b) throws IOException{
+        //检查缓冲区的长度
+        if(bufferCount >= buffer.length){
+            //清空缓冲区
+            flushBuffer();
+        }
+        buffer[bufferCount++] = (byte) b;
+    }
+
+    @Override
+    public void flushBuffer() throws IOException{
+        if(bufferCount > 0){
+            outputStream.write(buffer,0,bufferCount);
+        }
+        bufferCount = 0;
+    }
+
 
     @Override
     public void addCookie(Cookie cookie) {
@@ -184,10 +210,7 @@ public class HttpResponse implements HttpServletResponse {
         return 0;
     }
 
-    @Override
-    public void flushBuffer() throws IOException {
 
-    }
 
     @Override
     public void resetBuffer() {
