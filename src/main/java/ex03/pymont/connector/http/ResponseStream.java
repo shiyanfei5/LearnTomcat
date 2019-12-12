@@ -4,6 +4,9 @@ import javax.servlet.ServletOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * 字节输出流
+ */
 public class ResponseStream extends ServletOutputStream {
 
 
@@ -63,11 +66,15 @@ public class ResponseStream extends ServletOutputStream {
         if (closed)
             throw new IOException("responseStream.write.closed");
 
-        if ((length > 0) && (count >= length))
+        //当length == 0 或者 写入的count >0,报错
+        // length == -1时则不报错
+        if (  (length == 0)   || (length > 0) && (count >= length))
             throw new IOException("responseStream.write.count");
 
         response.write(b);
         count++;
+        length--;
+
     }
 
     boolean closed() {

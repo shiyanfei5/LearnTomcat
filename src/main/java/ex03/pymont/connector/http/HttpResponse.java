@@ -8,15 +8,18 @@ import java.util.Locale;
 
 public class HttpResponse implements HttpServletResponse {
     // the default buffer size
-    private static final int BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 2048;
 
 
 
     private OutputStream outputStream;  //outputStream即为输出
     private byte[] buffer;
     private int bufferCount;    //缓冲区中的数量
+    private int contentCount;   //写入的字节总量
     private HttpRequest request;
     private PrintWriter writer;
+    private String encoding = null;   //响应的编码，默认为null即为 ISO-8859-1
+
 
     //每一个响应对应一个返回的outputstream
     public HttpResponse(OutputStream output) {
@@ -70,21 +73,66 @@ public class HttpResponse implements HttpServletResponse {
      */
     public void write(int b) throws IOException{
         //检查缓冲区的长度
-        if(bufferCount >= buffer.length){
+        if(remaining()<= 0 ){
             //清空缓冲区
             flushBuffer();
         }
         buffer[bufferCount++] = (byte) b;
+        contentCount++;
     }
 
-    @Override
-    public void flushBuffer() throws IOException{
-        if(bufferCount > 0){
-            outputStream.write(buffer,0,bufferCount);
+    /**
+     * 获取缓冲区中剩余可写入的长度
+     * @return
+     */
+    public int remaining(){
+        return buffer.length-bufferCount;
+    }
+
+    /**
+     * @param bytes 批量写入提高性能
+     * @param offset 偏移
+     * @param len 长度
+     */
+    public void write(byte[] bytes, int offset,int len) throws  IOException{
+        if(len == 0) return;    //直接退出
+        //后面len会大于0
+        //若len 是 大于 缓冲区的长度，所以该缓冲区必然一次无法装下，此时放弃使用缓冲区
+        if(len > buffer.length){
+            flushBuffer();      //缓冲区全部发送，初始化为0
+            outputStream.write(bytes,offset,len);
+        } else{
+            //说明缓冲区可以装下
+            int available = remaining();    //获取剩余可写入数量
+            if( available < len){   //目前无法写入
+                flushBuffer();
+            }
+            System.arraycopy(
+                    bytes,offset,
+                    buffer,bufferCount,len
+            );
+            bufferCount += len;
         }
-        bufferCount = 0;
+        contentCount = contentCount + len;
+
     }
 
+    public void write(byte[] bytes) throws  IOException{
+        write(bytes,0,bytes.length);
+    }
+
+
+    public void flushBuffer() throws IOException {
+        //committed = true;
+        if (bufferCount > 0) {
+            try {
+                outputStream.write(buffer, 0, bufferCount);
+            }
+            finally {
+                bufferCount = 0;
+            }
+        }
+    }
 
     @Override
     public void addCookie(Cookie cookie) {
@@ -173,7 +221,10 @@ public class HttpResponse implements HttpServletResponse {
 
     @Override
     public String getCharacterEncoding() {
-        return null;
+        if (encoding == null)
+            return ("ISO-8859-1");
+        else
+            return (encoding);
     }
 
     @Override
@@ -183,10 +234,14 @@ public class HttpResponse implements HttpServletResponse {
 
     @Override
     public PrintWriter getWriter() throws IOException {
-        //第二个参数为true时打开auto-flush，
-        //auto-flush表示println方法自动flush，但是print不会flush
-        // TODO: 2019/12/4 当service调用print时不会flush缓冲区
-        writer = new PrintWriter(outputStream,true);
+        if(writer == null ){
+            //创建一个字节流
+            ResponseStream responseStream = new ResponseStream(this);
+            //创建一个转换流,将字符流转换为
+            OutputStreamWriter outputStreamWriter =
+                    new OutputStreamWriter(responseStream,this.getCharacterEncoding());
+            writer = new ResponseWriter(outputStreamWriter);
+        }
         return writer;
     }
 

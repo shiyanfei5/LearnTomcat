@@ -132,7 +132,7 @@ public class SocketInputStream extends InputStream {
 
 
     /**
-     * 业务实现，填充httpRequestLine(请求首行)
+     * 业务实现，填充httpRequestLine(请求首行)容器，用于装载内容
      */
     public void readRequestLine(HttpRequestLine requestLine) throws IOException {
         //从非空格行开始读取
@@ -144,7 +144,6 @@ public class SocketInputStream extends InputStream {
             try {
                 chr = read();
                 if(chr == -1){
-                    System.out.println("走到这步");
                     throw  new IOException();
                 }
             } catch (IOException e) {
