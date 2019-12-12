@@ -9,9 +9,13 @@ import util.StringManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Map;
 
 public class HttpProcessor {
 
@@ -38,13 +42,14 @@ public class HttpProcessor {
             outputStream = socket.getOutputStream();
 
             //创建一个请求
-            request = new HttpRequest();
+            request = new HttpRequest(socketInputStream);
             response = new HttpResponse(outputStream);
 
             //填充Request
             parseRequest(socketInputStream);
             //填充请求头
             parseHeaders(socketInputStream);
+            Map a =request.getParameterMap();
 
             //check if this is a request for a servlet or a static resource
             //a request for a servlet begins with "/servlet/"
@@ -101,6 +106,7 @@ public class HttpProcessor {
             } else if(  key.equals("Content-Length")) {
                 try {
                     int n = Integer.parseInt(value);
+                    request.setContentLength(n);
                 } catch (Exception e) {
                     throw new ServletException(sm.getString("httpProcessor.parseHeaders.contentLength"));
                 }
@@ -110,13 +116,6 @@ public class HttpProcessor {
 
         }
     }
-
-
-
-
-
-
-
 
     public void parseRequest(SocketInputStream socketInputStream)
             throws IOException, ServletException    {
@@ -138,18 +137,19 @@ public class HttpProcessor {
         // 进行uri解析,若存在uri包含参数
         int question = uri.indexOf("?");
         if(question >= 0){
-            //存在
-            uri = uri.substring(0,question);
+            //存在 ,首先更新 QueryString
             request.setQueryString( uri.substring(question+1));
+            uri = uri.substring(0,question); //重设uri
+
         }
 
         // 进行uri中jsessionid的检测，uri可能包含jsessionid
         // http://xxxx.rowse.jsp;jsessionid=5AC6268960?curAlbumID=9
+
         // TODO: 2019/12/10  目前不支持将session放在uri
 
-
         //进行uri标准化
-        String normalizedUri = normalize(uri);
+        String normalizedUri = RequestUtil.normalize(uri);
 
         //设置最终属性
         request.setMethod(method);
@@ -163,83 +163,28 @@ public class HttpProcessor {
 
     }
 
-    /**
-     * Return a context-relative path, beginning with a "/", that represents
-     * the canonical version of the specified path after ".." and "." elements
-     * are resolved out.  If the specified path attempts to go outside the
-     * boundaries of the current context (i.e. too many ".." path elements
-     * are present), return <code>null</code> instead.
-     *
-     * @param path Path to be normalized
-     */
-    protected String normalize(String path) {
-        if (path == null)
-            return null;
-        // Create a place for the normalized path
-        String normalized = path;
 
-        // Normalize "/%7E" and "/%7e" at the beginning to "/~"
-        if (normalized.startsWith("/%7E") || normalized.startsWith("/%7e"))
-            normalized = "/~" + normalized.substring(4);
+    public static void main(String[] args){
+        ServerSocket serverSocket = null;
+        int port = 8080;
+        try{
+            serverSocket = new ServerSocket(port,1, InetAddress.getByName("127.0.0.1"));
+        } catch (IOException e){
+            e.printStackTrace();
+            System.exit(1); //若出现问题则直接退出
+        }
+        while(true){
+            try{
+                Socket socket = serverSocket.accept();
+                HttpProcessor httpProcessor = new HttpProcessor(null);
+                httpProcessor.process(socket);
+            } catch (IOException e){
+                e.printStackTrace();
+                continue;
+            }
 
-        // Prevent encoding '%', '/', '.' and '\', which are special reserved
-        // characters
-        if ((normalized.indexOf("%25") >= 0)
-                || (normalized.indexOf("%2F") >= 0)
-                || (normalized.indexOf("%2E") >= 0)
-                || (normalized.indexOf("%5C") >= 0)
-                || (normalized.indexOf("%2f") >= 0)
-                || (normalized.indexOf("%2e") >= 0)
-                || (normalized.indexOf("%5c") >= 0)) {
-            return null;
         }
 
-        if (normalized.equals("/."))
-            return "/";
-
-        // Normalize the slashes and add leading slash if necessary
-        if (normalized.indexOf('\\') >= 0)
-            normalized = normalized.replace('\\', '/');
-        if (!normalized.startsWith("/"))
-            normalized = "/" + normalized;
-
-        // Resolve occurrences of "//" in the normalized path
-        while (true) {
-            int index = normalized.indexOf("//");
-            if (index < 0)
-                break;
-            normalized = normalized.substring(0, index) +
-                    normalized.substring(index + 1);
-        }
-
-        // Resolve occurrences of "/./" in the normalized path
-        while (true) {
-            int index = normalized.indexOf("/./");
-            if (index < 0)
-                break;
-            normalized = normalized.substring(0, index) +
-                    normalized.substring(index + 2);
-        }
-
-        // Resolve occurrences of "/../" in the normalized path
-        while (true) {
-            int index = normalized.indexOf("/../");
-            if (index < 0)
-                break;
-            if (index == 0)
-                return (null);  // Trying to go outside our context
-            int index2 = normalized.lastIndexOf('/', index - 1);
-            normalized = normalized.substring(0, index2) +
-                    normalized.substring(index + 3);
-        }
-
-        // Declare occurrences of "/..." (three or more dots) to be invalid
-        // (on some Windows platforms this walks the directory tree!!!)
-        if (normalized.indexOf("/...") >= 0)
-            return (null);
-
-        // Return the normalized path that we have completed
-        return (normalized);
 
     }
 

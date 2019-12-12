@@ -8,6 +8,7 @@ package ex03.pymont.connector.http;
 
 
 import util.RequestUtil;
+import util.StringManager;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletInputStream;
@@ -23,6 +24,11 @@ import java.util.*;
 
 public class HttpRequest implements HttpServletRequest {
 
+  /** 错误映射 */
+
+  protected static StringManager sm = StringManager.getManager(Constants.Package);
+
+  //-------------------------实例属性
   private String contentType;
   private String characterEncoding; //编码字符集
   private int contentLength;
@@ -40,8 +46,11 @@ public class HttpRequest implements HttpServletRequest {
   private boolean requestedSessionURL; //url存放session
   protected List<Cookie> cookies ;
   private boolean parsed;   //是否已经提取过 请求体
-  private Map parameterMap;
+  private Map<String,Object> parameterMap; // Map<String,Object>
 
+  public HttpRequest(InputStream input) {
+    this.input = input;
+  }
 
   //设置session是否存放cookie
   public void setRequestedSessionCookie(boolean flag) {
@@ -76,70 +85,76 @@ public class HttpRequest implements HttpServletRequest {
     }
     String encoding = getCharacterEncoding(); //获取编码
 
-    // 从uri的QueryString中获取参数
+    // 从uri的QueryString中获取参数,注意由于在uri中，所以此时 其皆为ascii字符
     String queryString = getQueryString();
-    try {
-      RequestUtil.parseParameters(results, queryString, encoding);
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    }
-
-    // Parse any parameters specified in the input stream
-    String contentType = getContentType();
-    if ("POST".equals(getMethod()) && (getContentLength() > 0)
-            && (this.stream == null)
-            && "application/x-www-form-urlencoded".equals(contentType)) {
-
+    if(queryString != null){
       try {
-        int max = getContentLength();
-        int len = 0;
-        byte buf[] = new byte[getContentLength()];
-        ServletInputStream is = getInputStream();
-        while (len < max) {
-          int next = is.read(buf, len, max - len);
-          if (next < 0 ) {
-            break;
-          }
-          len += next;
-        }
-        is.close();
-        if (len < max) {
-          // FIX ME, mod_jk when sending an HTTP POST will sometimes
-          // have an actual content length received < content length.
-          // Checking for a read of -1 above prevents this code from
-          // going into an infinite loop.  But the bug must be in mod_jk.
-          // Log additional data when this occurs to help debug mod_jk
-          StringBuffer msg = new StringBuffer();
-          msg.append("HttpRequestBase.parseParameters content length mismatch\n");
-          msg.append("  URL: ");
-          msg.append(getRequestURL());
-          msg.append(" Content Length: ");
-          msg.append(max);
-          msg.append(" Read: ");
-          msg.append(len);
-          msg.append("\n  Bytes Read: ");
-          if ( len > 0 ) {
-            msg.append(new String(buf,0,len));
-          }
-          log(msg.toString());
-          throw new RuntimeException
-                  (sm.getString("httpRequestBase.contentLengthMismatch"));
-        }
-        RequestUtil.parseParameters(results, buf, encoding);
-      } catch (UnsupportedEncodingException ue) {
-        ;
-      } catch (IOException e) {
-        throw new RuntimeException
-                (sm.getString("httpRequestBase.contentReadFail") +
-                        e.getMessage());
+        //由于uri中的QueryString，其皆为ascii字符，所以可以直接取Bytes
+        RequestUtil.parseParameters(parameterMap, queryString.getBytes(), encoding);
+      } catch (UnsupportedEncodingException e) {
+        e.printStackTrace();
       }
     }
 
-    // Store the final results
-    results.setLocked(true);
-    parsed = true;
-    parameters = results;
 
+    // Parse any parameters specified in the input stream
+    String contentType = getContentType();
+
+    if( "POST".equals(getMethod()) &&  getContentLength() > 0
+            && input != null){
+      // TODO: 2019/12/12 -----目前仅实现x-www-form-urlencoded得到
+      if(   "application/x-www-form-urlencoded".equals(contentType)
+             || contentType == null ){
+        try {
+          int max = getContentLength();
+          int len = 0;
+          byte buf[] = new byte[getContentLength()];
+          while (len < max) {
+            int next = input.read(buf, len, max - len);
+            if (next < 0 ) {
+              break;
+            }
+            len += next;
+          }
+          input.close();
+          if (len < max) {
+            // FIX ME, mod_jk when sending an HTTP POST will sometimes
+            // have an actual content length received < content length.
+            // Checking for a read of -1 above prevents this code from
+            // going into an infinite loop.  But the bug must be in mod_jk.
+            // Log additional data when this occurs to help debug mod_jk
+            StringBuffer msg = new StringBuffer();
+            msg.append("HttpRequestBase.parseParameters content length mismatch\n");
+            msg.append("  URL: ");
+            msg.append(getRequestURL());
+            msg.append(" Content Length: ");
+            msg.append(max);
+            msg.append(" Read: ");
+            msg.append(len);
+            msg.append("\n  Bytes Read: ");
+            if ( len > 0 ) {
+              msg.append(new String(buf,0,len));
+            }
+            throw new RuntimeException
+                    (sm.getString("httpRequestBase.contentLengthMismatch"));
+          }
+          RequestUtil.parseParameters(parameterMap, buf, encoding);
+        } catch (UnsupportedEncodingException ue) {
+
+        } catch (IOException e) {
+          throw new RuntimeException
+                  (sm.getString("httpRequestBase.contentReadFail") +
+                          e.getMessage());
+        }
+      }
+
+
+
+
+    }
+
+
+    parsed = true;
   }
 
   public void setContentType(String conType) {
@@ -148,7 +163,7 @@ public class HttpRequest implements HttpServletRequest {
     int semicolon = conType.indexOf(';'); //;的位置
     if ( semicolon  >= 0){
       //说明包含了 charset
-      characterEncoding = RequestUtil.parseCharacterEncoding(contentType);
+      characterEncoding = RequestUtil.parseCharacterEncoding(conType);
       contentType = conType.substring(0,semicolon).trim();
     } else{
       contentType =  conType.trim();
@@ -192,7 +207,7 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public String getMethod() {
-    return null;
+    return method;
   }
 
   public void setMethod(String method) {
@@ -320,7 +335,11 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public int getContentLength() {
-    return 0;
+    return contentLength;
+  }
+
+  public void setContentLength(int contentLength) {
+    this.contentLength = contentLength;
   }
 
   @Override
@@ -335,6 +354,8 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public String getParameter(String s) {
+    //解析 parse request的请求参数（一部分在uri，一部分可能在请求体）
+    parseParameters();
     return null;
   }
 
@@ -350,7 +371,8 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public Map getParameterMap() {
-    return null;
+    parseParameters();
+    return parameterMap;
   }
 
   @Override

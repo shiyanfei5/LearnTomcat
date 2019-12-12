@@ -74,7 +74,7 @@ public class SocketInputStream extends InputStream {
 
 
     /**
-     * 下一个有效位置
+     * 下一个有效位置,当前长度
      */
     protected int pos ;
 
