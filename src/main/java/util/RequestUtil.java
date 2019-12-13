@@ -246,10 +246,19 @@ public class RequestUtil {
     }
 
 
-    public static void main(){
+    public static void main(String[] args) throws Exception{
 
-        String a = "a=%E6%88%91";
-        
+
+        //汉字 "我"采用utf-8编码后为3byte，分别为{0xE6,0x88,0x91}即字节{230,136,145}
+        byte[] wo = "我".getBytes("utf-8");
+        // {0xE6,0x88,0x91} 对应的iso8869-1编码后 即为 3个字符的乱码
+        String s_iso88591 = new String(wo,"ISO8859-1");
+        System.out.println(s_iso88591);
+        // 数组b即为 s_iso88591字符串按照 ISO8859-1 解码后的字节数组，{0xE6,0x88,0x91}
+        byte[] b = s_iso88591.getBytes("ISO8859-1");
+        // 最后将其转为字符串如下
+        System.out.println( new String(b,"utf-8") );
+
 
     }
 }

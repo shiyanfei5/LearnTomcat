@@ -7,6 +7,7 @@ package ex03.pymont.connector.http;
  */
 
 
+import util.Enumerator;
 import util.RequestUtil;
 import util.StringManager;
 
@@ -47,6 +48,9 @@ public class HttpRequest implements HttpServletRequest {
   protected List<Cookie> cookies ;
   private boolean parsed;   //是否已经提取过 请求体
   private Map<String,Object> parameterMap; // Map<String,Object>
+  protected Map<String,Object> headers;  //存储请求头
+
+
 
   public HttpRequest(InputStream input) {
     this.input = input;
@@ -72,6 +76,25 @@ public class HttpRequest implements HttpServletRequest {
     cookies.add(cookie);
   }
 
+  // name 永远小写
+  public void addHeader(String name, String value) {
+    name = name.toLowerCase();
+    //若第一次添加，将其初始化
+    if(headers == null){
+      headers = new HashMap<>();
+    }
+    synchronized (headers) {
+      ArrayList values = (ArrayList) headers.get(name);
+      if (values == null) {
+        values = new ArrayList();
+        headers.put(name, values);
+      }
+      values.add(value);
+    }
+  }
+
+
+
   /**
    * Parse the parameters of this request, if it has not already occurred.
    * If parameters are present in both the query string and the request
@@ -80,6 +103,7 @@ public class HttpRequest implements HttpServletRequest {
   protected void parseParameters() {
     // 若已经完成了parsed，则return
     if (parsed)  return;
+
     if ( parameterMap == null){
       parameterMap = new HashMap();
     }
@@ -147,13 +171,7 @@ public class HttpRequest implements HttpServletRequest {
                           e.getMessage());
         }
       }
-
-
-
-
     }
-
-
     parsed = true;
   }
 
@@ -197,7 +215,9 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public Enumeration getHeaderNames() {
-    return null;
+    synchronized (headers) {
+      return (new Enumerator(headers.keySet()));
+    }
   }
 
   @Override
@@ -323,7 +343,8 @@ public class HttpRequest implements HttpServletRequest {
   @Override
   public String getCharacterEncoding() {
     if(characterEncoding == null){
-      return "ISO-8859-1";
+      //return "ISO-8859-1";
+      return "utf-8";
     }
     return characterEncoding;
   }
@@ -361,7 +382,8 @@ public class HttpRequest implements HttpServletRequest {
 
   @Override
   public Enumeration getParameterNames() {
-    return null;
+    parseParameters();
+    return (new Enumerator(parameterMap.keySet()));
   }
 
   @Override

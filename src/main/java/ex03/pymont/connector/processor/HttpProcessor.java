@@ -81,11 +81,13 @@ public class HttpProcessor {
             if(httpHeader.valueEnd == -1 || httpHeader.nameEnd == -1){
                 break;
             }
-            // 获取key和value
-            String key = new String(httpHeader.name,0,httpHeader.nameEnd+1);
+            // 获取header的name和value，header永远小写！！！
+            String key = new String(httpHeader.name,0,httpHeader.nameEnd+1).toLowerCase();
+            //  value可能大写也可能小写
             String value = new String(httpHeader.value,0,httpHeader.valueEnd+1);
+            request.addHeader(key,value);
 
-            if(key.equals("Cookie")) {
+            if(key.equals("cookie")) {
                 List<Cookie> cookieList = RequestUtil.parseCookieHeader(value);
                 //由于cookie中可能包含session，所以需要如下处理设置session
                 for (Cookie cookie : cookieList) {
@@ -103,7 +105,7 @@ public class HttpProcessor {
                     // 把该cookie添加到request中
                     request.addCookie(cookie);
                 }
-            } else if(  key.equals("Content-Length")) {
+            } else if(  key.equals("content-length")) {
                 try {
                     int n = Integer.parseInt(value);
                     request.setContentLength(n);
