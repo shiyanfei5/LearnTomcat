@@ -19,7 +19,7 @@ public class ResponseStream extends ServletOutputStream {
     /**
      * Should we commit the response when we are flushed?
      */
-    protected boolean commit = false;
+    protected boolean commit ;
 
 
     /**
@@ -50,7 +50,7 @@ public class ResponseStream extends ServletOutputStream {
 
         super();
         closed = false;
-        commit = false;
+        commit = true;
         count = 0;
         this.response = response;
         this.stream = response.getOutputStream();
