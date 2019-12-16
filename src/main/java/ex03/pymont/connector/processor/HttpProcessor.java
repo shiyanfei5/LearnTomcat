@@ -56,6 +56,7 @@ public class HttpProcessor {
             if (request.getRequestURI().startsWith("/servlet/")) {
                 ServletProcessor processor = new ServletProcessor();
                 processor.process(request, response);
+                response.getWriter().flush();
             }
             else {
                 StaticResourceProcessor processor = new StaticResourceProcessor();

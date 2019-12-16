@@ -66,6 +66,9 @@ public class HttpResponse implements HttpServletResponse {
 
     }
 
+    public int getBufferCount() {
+        return bufferCount;
+    }
 
     /**
      * write方法，写入buffer中

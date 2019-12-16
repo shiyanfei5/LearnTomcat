@@ -38,6 +38,7 @@ public class HttpConnector implements Runnable{
                 Socket socket = serverSocket.accept();
                 HttpProcessor httpProcessor = new HttpProcessor(this);
                 httpProcessor.process(socket);
+                socket.close();
             } catch (IOException e){
                 e.printStackTrace();
                 continue;
