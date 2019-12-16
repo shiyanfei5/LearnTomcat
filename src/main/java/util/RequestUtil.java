@@ -172,9 +172,7 @@ public class RequestUtil {
      */
     public static void parseParameters(Map map, byte[] data, String encoding)
             throws UnsupportedEncodingException {
-
         if (data != null && data.length > 0) {
-            int    pos = 0;
             int    ix = 0;
             int    ox = 0;
             String key = null;
