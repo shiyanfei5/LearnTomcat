@@ -1,6 +1,6 @@
 package ex04.pymont.connector.processor;
 
-import ex04.pymont.connector.http.HttpRequest;
+import ex04.pymont.connector.http.request.HttpRequest;
 import ex04.pymont.connector.http.HttpResponse;
 
 public class StaticResourceProcessor {

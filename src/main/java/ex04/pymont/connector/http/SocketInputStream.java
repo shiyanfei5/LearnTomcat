@@ -87,6 +87,11 @@ public class SocketInputStream extends InputStream {
         buf = new byte[bufferSize];
     }
 
+    /**
+     * 读一个字节
+     * @return
+     * @throws IOException
+     */
     @Override
     public int read() throws IOException {
         // 说明buffer已经读完了
@@ -100,6 +105,42 @@ public class SocketInputStream extends InputStream {
         }
         return buf[pos++] & 0xff;
     }
+
+
+    /**
+     *  读多个字节到字节数组中
+     */
+    @Override
+    public int read(byte[] b, int off , int len) throws IOException{
+        // 加强健壮性，异常判定
+        if (b == null) {
+            throw new NullPointerException();
+        } else if (off < 0 || len < 0 || len > b.length - off) {
+            throw new IndexOutOfBoundsException();
+        } else if (len == 0) {
+            return 0;
+        }
+
+        // 查看本次缓冲区可读的数量范围
+        int avail = remaining();
+        if ( avail == 0){       //若没有可用了
+            fill();     //填充缓冲区
+            avail = remaining();    //刷新avail
+        }
+        if(avail == 0) {
+            return -1;
+        }
+        if(avail >= len){
+            System.arraycopy(b,off,buf,pos,len);    //缓冲区够用，直接拷贝
+            pos += len;
+            return len;
+        }else {
+            System.arraycopy(b,off,buf,pos,avail);
+            pos += avail;
+            return avail;
+        }
+    }
+
 
     private void fill() throws IOException{
         //  缓冲区内读取字节

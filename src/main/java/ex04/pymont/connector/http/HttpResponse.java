@@ -1,5 +1,7 @@
 package ex04.pymont.connector.http;
 
+import ex04.pymont.connector.http.request.HttpRequest;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;

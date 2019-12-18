@@ -1,4 +1,4 @@
-package ex04.pymont.connector.http;
+package ex04.pymont.connector.http.request;
 
 /** this class copies methods from org.apache.catalina.connector.HttpRequestBase
  *  and org.apache.catalina.connector.http.HttpRequestImpl.
@@ -7,6 +7,7 @@ package ex04.pymont.connector.http;
  */
 
 
+import ex04.pymont.connector.http.Constants;
 import util.Enumerator;
 import util.RequestUtil;
 import util.StringManager;
@@ -49,10 +50,10 @@ public class HttpRequest implements HttpServletRequest {
   private boolean requestedSessionURL; //url存放session
   protected List<Cookie> cookies ;
   private boolean parsed;   //是否已经提取过 请求体
-  private Map<String,Object> parameterMap; // Map<String,Object>
+  private Map<String,List> parameterMap; // Map<String,Object>
   protected Map<String,Object> headers;  //存储请求头
-
-
+  private String transferEncoding;  //传输编码格式
+  private String authorization;     //权限认证
 
   public HttpRequest(InputStream input) {
     this.input = input;
@@ -70,14 +71,25 @@ public class HttpRequest implements HttpServletRequest {
   public void setRequestedSessionId(String requestedSessionId) {
     this.requestedSessionId = requestedSessionId;
   }
-
+  //设置transferEncoding
+  public void setTransferEncoding(String transferEncoding) {
+    this.transferEncoding = transferEncoding;
+  }
+  //返回transferEncoding
+  public String getTransferEncoding() {
+    return this.transferEncoding;
+  }
+  //添加authoraizetion
+  public void setAuthorization(String authorization) {
+    this.authorization = authorization;
+  }
+  //添加cookie
   public void addCookie(Cookie cookie){
     if(cookies == null){
       cookies = new ArrayList<>();
     }
     cookies.add(cookie);
   }
-
   // name 永远小写
   public void addHeader(String name, String value) {
     name = name.toLowerCase();
@@ -94,6 +106,9 @@ public class HttpRequest implements HttpServletRequest {
       values.add(value);
     }
   }
+  // 获取原生SocketInputStream
+  public InputStream getStream(){ return input;}
+
 
 
 
@@ -164,7 +179,7 @@ public class HttpRequest implements HttpServletRequest {
             throw new RuntimeException
                     (sm.getString("httpRequestBase.contentLengthMismatch"));
           }
-          RequestUtil.parseParameters(parameterMap, buf, encoding);
+          RequestUtil.parseParameters(parameterMap, buf, encoding);   //urlencode转为paramsMap
         } catch (UnsupportedEncodingException ue) {
 
         } catch (IOException e) {
@@ -468,9 +483,6 @@ public class HttpRequest implements HttpServletRequest {
   public String getRealPath(String s) {
     return null;
   }
-
-
-
 
 
 

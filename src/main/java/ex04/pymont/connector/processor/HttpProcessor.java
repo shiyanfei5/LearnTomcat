@@ -3,6 +3,7 @@ package ex04.pymont.connector.processor;
 
 
 import ex04.pymont.connector.http.*;
+import ex04.pymont.connector.http.request.HttpRequest;
 import util.RequestUtil;
 import util.StringManager;
 

@@ -2,7 +2,7 @@ package ex04.pymont.connector.processor;
 
 
 import ex02.pymont.HttpServer;
-import ex04.pymont.connector.http.HttpRequest;
+import ex04.pymont.connector.http.request.HttpRequest;
 import ex04.pymont.connector.http.HttpResponse;
 
 import javax.servlet.Servlet;
