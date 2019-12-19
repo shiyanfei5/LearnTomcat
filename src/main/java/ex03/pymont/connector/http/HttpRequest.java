@@ -47,7 +47,7 @@ public class HttpRequest implements HttpServletRequest {
   private boolean requestedSessionURL; //url存放session
   protected List<Cookie> cookies ;
   private boolean parsed;   //是否已经提取过 请求体
-  private Map<String,Object> parameterMap; // Map<String,Object>
+  private Map<String,List> parameterMap; // Map<String,Object>
   protected Map<String,Object> headers;  //存储请求头
 
 

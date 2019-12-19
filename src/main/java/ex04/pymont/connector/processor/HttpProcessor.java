@@ -4,11 +4,13 @@ package ex04.pymont.connector.processor;
 
 import ex04.pymont.connector.http.*;
 import ex04.pymont.connector.http.request.HttpRequest;
+import ex04.pymont.connector.http.request.HttpRequestStream;
 import util.RequestUtil;
 import util.StringManager;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -88,9 +90,9 @@ public class HttpProcessor {
                 break;
             }
             // 获取header的name和value，header永远小写！！！
-            String key = new String(httpHeader.name,0,httpHeader.nameEnd+1).toLowerCase();
+            String key = new String(httpHeader.name,0,httpHeader.nameEnd).toLowerCase();
             //  value可能大写也可能小写
-            String value = new String(httpHeader.value,0,httpHeader.valueEnd+1);
+            String value = new String(httpHeader.value,0,httpHeader.valueEnd);
             request.addHeader(key,value);   //加到整体的header中
 
 
@@ -140,9 +142,9 @@ public class HttpProcessor {
         //填充requestline容器
         socketInputStream.readRequestLine(requestLine);
 
-        String method = new String(requestLine.method,0,requestLine.methodEnd+1);
-        String uri = new String(requestLine.uri,0,requestLine.uriEnd+1);
-        String protocol = new String(requestLine.protocol,0,requestLine.protocolEnd+1);
+        String method = new String(requestLine.method,0,requestLine.methodEnd);
+        String uri = new String(requestLine.uri,0,requestLine.uriEnd);
+        String protocol = new String(requestLine.protocol,0,requestLine.protocolEnd);
         //  处理method，没有什么需要注意的
         if (method.length() < 1) {
             throw new ServletException("Missing HTTP request method");
@@ -204,7 +206,31 @@ public class HttpProcessor {
             try{
                 Socket socket = serverSocket.accept();
                 HttpProcessor httpProcessor = new HttpProcessor(null);
-                httpProcessor.process(socket);
+                SocketInputStream socketInputStream = null;
+                OutputStream outputStream = null;
+
+                try{
+                    socketInputStream = new SocketInputStream( socket.getInputStream(),2048);
+
+                    //创建一个请求
+                    httpProcessor.request = new HttpRequest(socketInputStream);
+
+                    //填充Request
+                    httpProcessor.parseRequest(socketInputStream);
+                    //填充请求头
+                    httpProcessor.parseHeaders(socketInputStream);
+                    HttpRequestStream httpRequestStream = new HttpRequestStream(httpProcessor.request);
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    byte[] load = new byte[1024];
+                    int len ;
+                    while ( (len = httpRequestStream.read(load)) != -1 ){
+                        byteArrayOutputStream.write(load,0,len);
+                    }
+                    System.out.println( new String(byteArrayOutputStream.toByteArray(),httpProcessor.request.getCharacterEncoding()));
+                    byteArrayOutputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } catch (IOException e){
                 e.printStackTrace();
                 continue;

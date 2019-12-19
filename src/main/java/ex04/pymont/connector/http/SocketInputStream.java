@@ -1,14 +1,15 @@
 package ex04.pymont.connector.http;
 
+import ex04.pymont.connector.http.request.HttpRequest;
+import ex04.pymont.connector.processor.ServletProcessor;
+import ex04.pymont.connector.processor.StaticResourceProcessor;
 import util.StringManager;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 
 public class SocketInputStream extends InputStream {
 
@@ -84,6 +85,8 @@ public class SocketInputStream extends InputStream {
 
     public SocketInputStream(InputStream is, int bufferSize) {
         this.is = is;
+        pos = 0;
+        count = 0;
         buf = new byte[bufferSize];
     }
 
@@ -109,6 +112,7 @@ public class SocketInputStream extends InputStream {
 
     /**
      *  读多个字节到字节数组中
+     *  原则，一次性最多读完 缓冲区大小的数据
      */
     @Override
     public int read(byte[] b, int off , int len) throws IOException{
@@ -131,11 +135,11 @@ public class SocketInputStream extends InputStream {
             return -1;
         }
         if(avail >= len){
-            System.arraycopy(b,off,buf,pos,len);    //缓冲区够用，直接拷贝
+            System.arraycopy(buf,pos,b,off,len);    //缓冲区够用，直接拷贝
             pos += len;
             return len;
         }else {
-            System.arraycopy(b,off,buf,pos,avail);
+            System.arraycopy(buf,pos,b,off,avail);
             pos += avail;
             return avail;
         }
@@ -269,10 +273,12 @@ public class SocketInputStream extends InputStream {
             chr = read();
             // 满足该条件退出,到了":"
             if( chr == COLON){
-                chr = read();   //再读一个，读到的是" "的话进行退出
-                if(chr == SP){
+                int end = read();   //再读一个，读到的是" "的话进行退出
+                if(end == SP){
                     header.nameEnd = readCount ;
                     break;
+                } else{
+                    pos-- ; //假装没读过这个 字符，保证下次会再次读到
                 }
             }
             //检查是否需要扩容
@@ -286,10 +292,12 @@ public class SocketInputStream extends InputStream {
         while(true){
             chr = read();
             if(chr == CR){
-                chr = read();
-                if( chr == LF){
+                int end  = read();
+                if( end == LF){
                     header.valueEnd = readCount ;
                     break;
+                } else{
+                    pos--;
                 }
             }
             //检查是否需要扩容
@@ -299,8 +307,6 @@ public class SocketInputStream extends InputStream {
             header.value[readCount] = (char)chr;
             readCount++;
         }
-
-
     }
 
 
@@ -316,13 +322,10 @@ public class SocketInputStream extends InputStream {
         while(true){
             try{
                 Socket socket = serverSocket.accept();  //开启端口等待tcp连接建立
-                InputStream inputStream = socket.getInputStream();
-                OutputStream outputStream = socket.getOutputStream();
                 HttpRequestLine httpRequestLine = new HttpRequestLine();
                 HttpHeader httpHeader = new HttpHeader();
-                SocketInputStream socketInputStream = new SocketInputStream(inputStream,2048);
+                SocketInputStream socketInputStream = new SocketInputStream(socket.getInputStream(),2048);
                 socketInputStream.readRequestLine(httpRequestLine);
-
                 while(true){
 
                     socketInputStream.readHeader(httpHeader);
@@ -335,9 +338,6 @@ public class SocketInputStream extends InputStream {
                             new String( httpHeader.value,0,httpHeader.valueEnd)
                     );
                 }
-
-
-
                 //资源释放
                 socket.close();
             } catch (Exception e){
